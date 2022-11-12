@@ -1,0 +1,106 @@
+LIBRARY SQL DATABSE  QUIERIES
+A.CREATE THE TABLES w constraints 
+CREATE TABLE `libraries`.`author` (
+  `AuthorId` INT NOT NULL,
+  `AuthorFirstName` VARCHAR(45) NULL,
+  `AuthorLastName` VARCHAR(45) NULL,
+  `AuthorNationality` VARCHAR(45) NULL,
+  PRIMARY KEY (`AuthorId`));
+  
+CREATE TABLE `libraries`.`book` (
+`BookID` INT NOT NULL, 
+`BookTitle` VARCHAR(50) NOT NULL, 
+`BookAuthor` INT NOT NULL, 
+`Genre` VARCHAR(20),
+PRIMARY KEY (`BookID`));
+
+CREATE TABLE `libraries`.`Borrower` (
+`BorrowId` INT NOT NULL, 
+`ClientId` INT NOT NULL, 
+`BookId` INT NOT NULL, 
+`BorrowDate` date,
+PRIMARY KEY (`BorrowId`));
+
+CREATE TABLE `libraries`.`Client` (
+`ClientId` INT NOT NULL, 
+`ClientFirstName` VARCHAR(50), 
+`ClientLastName` VARCHAR(50),
+`ClientDoB` INT,
+PRIMARY KEY (`ClientId`));
+#add occupation column for client table
+ALTER TABLE `libraries`.`client` 
+ADD COLUMN `Occupation` VARCHAR(45) NULL AFTER `ClientDoB`;
+
+#foreign key Book author ID to authorID 
+ALTER TABLE `libraries`.`book` 
+ADD INDEX `BookAuthor_idx` (`BookAuthor` ASC) VISIBLE;
+;
+ALTER TABLE `libraries`.`book` 
+ADD CONSTRAINT `BookAuthor`
+  FOREIGN KEY (`BookAuthor`)
+  REFERENCES `libraries`.`author` (`AuthorId`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+#foreign key Borrower.BookID to Book.BookID
+ALTER TABLE `libraries`.`borrower` 
+ADD INDEX `BookId_idx` (`BookId` ASC) VISIBLE;
+;
+ALTER TABLE `libraries`.`borrower` 
+ADD CONSTRAINT `BookId`
+  FOREIGN KEY (`BookId`)
+  REFERENCES `libraries`.`book` (`BookID`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+#foreign key Borrower.ClientID to Client.ClientID
+ALTER TABLE `libraries`.`borrower` 
+ADD INDEX `ClientId_idx` (`ClientId` ASC) VISIBLE;
+;
+ALTER TABLE `libraries`.`borrower` 
+ADD CONSTRAINT `ClientId`
+  FOREIGN KEY (`ClientId`)
+  REFERENCES `libraries`.`client` (`ClientId`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+B. Populate database with sample set 
+Used mysql workbench GUI to populate data from CSV file.
+
+C. Write following queries
+1. #display all contents of client
+Select * from `libraries`.`Client`
+2. #display client firstname,lastname, Occupation
+Select ClientFirstName,ClientLastName,Occupation from `libraries`.`Client`;
+3. #displays First and last names of clients that borrowed books in March 2018
+Select ClientFirstName,ClientLastName from `libraries`.`Client` where ClientId in (Select ClientId from `libraries`.`borrower`where Year(BorrowDate)=2018 and Month(BorrowDate)=03);
+4. #displays First and last names of the top 5 authors clients borrowed in 2017
+Select `libraries`.`author`.AuthorFirstName,`libraries`.`author`.AuthorLastName from `libraries`.`borrower`,`libraries`.`book`,`libraries`.`author` where `libraries`.`borrower`.BookId=`libraries`.`book`.BookId and `libraries`.`book`.BookAuthor=`libraries`.`author`.AuthorId and Year(`libraries`.`borrower`.BorrowDate)=2017 group by `libraries`.`borrower`.BookId order by count(*) Desc Limit 5;
+
+5. #displays Nationalities of the least 5 authors that clients borrowed during the years 2015-2017 
+Select `libraries`.`author`.AuthorNationality from `libraries`.`borrower`,`libraries`.`book`,`libraries`.`author` where `libraries`.`borrower`.BookId=`libraries`.`book`.BookId and `libraries`.`book`.BookAuthor=`libraries`.`author`.AuthorId and Year(`libraries`.`borrower`.BorrowDate) in (2015,2017) group by `libraries`.`borrower`.BookId order by count(*) Limit 5;
+
+6. #displays the book that was most borrowed during the years 2015 to 2017 
+Select `libraries`.`book`.BookTitle from `libraries`.`borrower`,`libraries`.`book` where `libraries`.`borrower`.BookId=`libraries`.`book`.BookId and Year(BorrowDate) In (2015,2017) group by `libraries`.`borrower`.BookId order by count(*) Desc Limit 1;
+
+7. #Displays Top borrowed genres for client born in years 1970-1980
+Select `libraries`.`book`.Genre from `libraries`.`borrower`,`libraries`.`book`, `libraries`.`client` where `libraries`.`borrower`.BookId=`libraries`.`book`.BookId and `libraries`.`client`.ClientId = `libraries`.`borrower`.ClientId and `libraries`.`client`.ClientDoB in (1970,1980) group by `libraries`.`book`.genre  order by count(*) Desc;
+
+8. #Displays Top 5 occupations that borrowed the most in 2016
+Select `libraries`.`client`.Occupation from `libraries`.`borrower`,`libraries`.`client` where `libraries`.`borrower`.ClientId = `libraries`.`client`.ClientId group by `libraries`.`borrower`.ClientId order by count(*) Desc Limit 5;
+9. #Display Average number of borrowed books by job title
+Select `libraries`.`client`.Occupation, count(*) as NumberBooks from `libraries`.`borrower` Natural inner join `libraries`.`client` group by `libraries`.`client`.Occupation;
+
+10. #Creats a VIEW and display the titles that were borrowed by at least 20% of clients
+Create VIEW DISPLAYER Select `libraries`.`book`.BookTitle, count(*) as count from `libraries`.`borrower`,`libraries`.`book` where `libraries`.`borrower`.BookId=`libraries`.`book`.BookId group by `libraries`.`borrower`.BookId Having count(*) > 16 order by count(*) Desc;
+
+11. #displays The top month of borrows in 2017
+Select MONTHNAME(`libraries`.`borrower`.BorrowDate) as Month, Count(*) As count from `libraries`.`borrower` where Year(`libraries`.`borrower`.BorrowDate) = 2017 Group By MONTHNAME(`libraries`.`borrower`.BorrowDate) Order By count Desc Limit 3;
+
+12. #displays average number by age
+Select `libraries`.`book`.BookTitle, count(*) as count from `libraries`.`borrower`,`libraries`.`book` where `libraries`.`borrower`.BookId=`libraries`.`book`.BookId group by `libraries`.`borrower`.BookId Having count(*) > 16 order by count(*) Desc;
+
+
+
+
+
